@@ -55,7 +55,6 @@
 
 %union {
     int  			integerVal;
-    double 			doubleVal;
     std::string*		stringVal;
     class CalcNode*		calcnode;
 }
@@ -63,18 +62,18 @@
 %token			END					0		"end of file"
 %token			EOL							"end of line"
 
-%token			PREAMBLE        "'preamble:'"
+%token			PREAMBLE            "'preamble:'"
 %token			PROPERTYKW      "'property:'"
 
-%token			PACKAGEKW       "'package:'"
-%token			VERSIONKW       "'version:'"
-%token			DEPENDSKW       "'depends:'"
+%token			PACKAGEKW        "'package:'"
+%token			VERSIONKW          "'version:'"
+%token			DEPENDSKW         "'depends:'"
 %token			CONFLICTSKW     "'conflicts:'"
-%token			PROVIDESKW      "'provides:'"
-%token			REQUEST         "'request:'"
-%token			UPGRADE         "'upgrade:'"
-%token			INSTALL         "'install:'"
-%token			REMOVE          "'remove:'"
+%token			PROVIDESKW       "'provides:'"
+%token			REQUEST               "'request:'"
+%token			UPGRADE              "'upgrade:'"
+%token			INSTALL                "'install:'"
+%token			REMOVE                "'remove:'"
 
 %token			REQ		"="
 %token			RNEQ		"!="
@@ -83,19 +82,14 @@
 %token			RLT		"<"
 %token			RLE		"<="
 
-%token <integerVal> 	INTEGER		"integer"
+%token <integerVal> 	INTEGER      "integer"
 %token <stringVal> 	STRING		"string"
-%token <stringVal>      PROPNAME        "property name"
-%token <stringVal>      IDENT           "identifier"
-%token <integerVal>     COLON           "colon"
-
-
-
+%token <stringVal>      PROPNAME    "property name"
+%token <stringVal>      IDENT              "identifier"
 
 %destructor { delete $$; } STRING
-
- /*** END EXAMPLE - Change the example grammar's tokens above ***/
-
+%destructor { delete $$; } PROPNAME
+%destructor { delete $$; } IDENT
 %{
 
 #include "driver.h"
@@ -110,17 +104,16 @@
 %}
 
 %% /*** Grammar Rules ***/
-
- /*** BEGIN EXAMPLE - Change the example grammar rules below ***/
  
 propinit : /* empy */
           | REQ '[' INTEGER ']'
 
-propdef : PROPNAME  IDENT propinit /*REQ '[' INTEGER ']' */
-          {
-	          std::cout << "propdef " << *$1 << std::endl
-	                    << "type " << *$2 << std::endl;
-	        }
+propdef :
+              PROPNAME  IDENT propinit
+	      {
+		//std::cout << "propdef " << *$1 << std::endl
+		//<< "type " << *$2 << std::endl;
+	      }
 
 propdefs : /* empty */
           | propdef
@@ -191,65 +184,49 @@ pkgprop :
           }
         
 pkgprops :
-           /*empty */
-           | pkgprop
-           {
-           //std::cerr << "package property" << std::endl;
-           }
-           | pkgprops pkgprop
-           {
-           }
+                 /*empty */
+                | pkgprop
+                 {
+		   //std::cerr << "package property" << std::endl;
+		 }
+               | pkgprops pkgprop
+	       {
+	       }
 
-package : PACKAGEKW IDENT EOL
-          VERSIONKW INTEGER EOL
-          pkgprops
-          {
-            std::cout << "recognized package: " << *$2
-            << " version: " << $5 << std::endl;
-          }
+package : 
+               PACKAGEKW IDENT EOL
+	       VERSIONKW INTEGER EOL
+	       pkgprops
+	       {
+		 //std::cout << "recognized package: " << *$2
+		 //<< " version: " << $5 << std::endl;
+	       }
 
-universe : package
-           {
+universe :
+               package
+	       {
 	         //std::cerr << "recognized package" << std::endl;
-	         }
-          | universe EOL package 
+	       }
+               | universe EOL package 
 
 
 reqst :
          INSTALL vpkglist EOL
          | UPGRADE vpkglist EOL
          | REMOVE vpkglist EOL
-
+	 
 reqlist:
         reqst
         | reqlist reqst
 
-request : REQUEST EOL reqlist
+request :
+             REQUEST EOL reqlist
 
 start	:
         preamble EOL EOL universe EOL EOL request
         {
-          //std::cout << "preamble" << std::endl;
-	      }
-//        | start ';'
-        // | start EOL
-	// | start assignment ';'
-	// | start assignment EOL
-	// | start assignment END
-        // | start expr ';'
-        //   {
-	//       driver.calc.expressions.push_back($2);
-	//   }
-        // | start expr EOL
-        //   {
-	//       driver.calc.expressions.push_back($2);
-	//   }
-        // | start expr END
-        //   {
-	//       driver.calc.expressions.push_back($2);
-	//   }
-
- /*** END EXAMPLE - Change the example grammar rules above ***/
+          std::cout << "finished" << std::endl;
+	}
 
 %% /*** Additional Code ***/
 

@@ -34,7 +34,7 @@ typedef example::Parser::token_type token_type;
 
 /* enable scanner to generate debug output. disable this for release
  * versions. */
-%option debug
+/* %option debug */
 
 /* no support for include files is planned */
 %option yywrap nounput 
@@ -43,7 +43,7 @@ typedef example::Parser::token_type token_type;
 %option stack
 
 /* exclusive start conditions */
-%x package preamble comment ccomment
+%x comment ccomment
 /* The following paragraph suffices to track locations accurately. Each time
  * yylex is invoked, the begin position is moved onto the end position. */
 %{

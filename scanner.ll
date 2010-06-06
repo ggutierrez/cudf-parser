@@ -42,8 +42,10 @@ typedef example::Parser::token_type token_type;
 /* enables the use of start condition stacks */
 %option stack
 
-/* exclusive start conditions */
-%x comment ccomment
+/* exclusive start conditions.
+   keep is exclusive because its possible values may colide with package names.
+ */
+%x comment ccomment keep
 /* The following paragraph suffices to track locations accurately. Each time
  * yylex is invoked, the begin position is moved onto the end position. */
 %{
@@ -85,6 +87,31 @@ conflicts: {
 
 provides: {
   return token::PROVIDESKW;
+}
+
+keep: {
+  BEGIN(keep);
+  return token::KEEPKW;
+}
+
+<keep>version {
+  BEGIN(INITIAL);
+  return token::KEEPVERSION;
+}
+
+<keep>package {
+  BEGIN(INITIAL);
+  return token::KEEPPACKAGE;
+}
+
+<keep>feature {
+  BEGIN(INITIAL);
+  return token::KEEPFEATURE;
+}
+
+<keep>none {
+  BEGIN(INITIAL);
+  return token::KEEPNONE;
 }
 
 request:[^\n]* {

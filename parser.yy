@@ -70,6 +70,11 @@
 %token			DEPENDSKW         "'depends:'"
 %token			CONFLICTSKW     "'conflicts:'"
 %token			PROVIDESKW       "'provides:'"
+%token                    KEEPKW                 "'keep:'"
+%token                    KEEPPACKAGE    "'package'"
+%token                    KEEPVERSION     "'version'"
+%token                    KEEPFEATURE    "'feature'"
+%token                    KEEPNONE           "'none'"
 %token			REQUEST               "'request:'"
 %token			UPGRADE              "'upgrade:'"
 %token			INSTALL                "'install:'"
@@ -164,6 +169,12 @@ propval :
          | STRING
          | INTEGER
          | IDENT
+              
+keepprop :
+                 KEEPNONE
+		 | KEEPVERSION
+		 | KEEPPACKAGE
+		 | KEEPFEATURE
 
 pkgprop :
           DEPENDSKW vpkgorlist EOL
@@ -178,6 +189,9 @@ pkgprop :
           {
             //std::cout << "provides" << std::endl;
           }
+          | KEEPKW keepprop EOL
+	  {
+	  }
           |PROPNAME propval EOL
           {
           //std::cerr << "**property** '" << *$1 << "'" << std::endl;
@@ -233,5 +247,5 @@ start	:
 void example::Parser::error(const Parser::location_type& l,
 			    const std::string& m)
 {
-    driver.error(l, m);
+  driver.error(l, m);
 }

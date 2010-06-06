@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <cmath>
 
+
+// ------
 /** CalcNode is the abstract base class for calculation nodes. From it the
  * different nullary, unary and binary nodes are derived. */
 class CalcNode {

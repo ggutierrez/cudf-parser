@@ -2,13 +2,14 @@
 /** \file parser.yy Contains the example Bison parser source */
 
 %{ /*** C/C++ Declarations ***/
-
+#include <boost/foreach.hpp>
 #include <stdio.h>
 #include <string>
 #include <vector>
 
-#include "expression.h"
+#include "cudf.h"
 
+#define  foreach BOOST_FOREACH
 %}
 
 /*** yacc/bison Declarations ***/
@@ -54,9 +55,14 @@
  /*** BEGIN EXAMPLE - Change the example grammar's tokens below ***/
 
 %union {
-    int  			integerVal;
-    std::string*		stringVal;
-    class CalcNode*		calcnode;
+  int  			     integerVal;
+  std::string*		     stringVal;
+  RelOp                        relopVal;
+  class Vpkg*               vpkgVal;
+  vpkglist_t*                 vpkglistVal;
+  list_vpkglist_t*          listvpkglistVal;
+  class CudfPackage*   pkgVal;
+  class CudfDoc*         docVal;
 }
 
 %token			END					0		"end of file"
@@ -88,13 +94,25 @@
 %token			RLE		"<="
 
 %token <integerVal> 	INTEGER      "integer"
-%token <stringVal> 	STRING		"string"
-%token <stringVal>      PROPNAME    "property name"
-%token <stringVal>      IDENT              "identifier"
+%token <stringVal> 	STRING	        "string"
+%token <stringVal>        PROPNAME  "property name"
+%token <stringVal>        IDENT            "identifier"
+
+%type <relopVal> relop
+%type<vpkgVal> vpkg
+%type<vpkglistVal> vpkglist vpkglist2
+%type<listvpkglistVal> vpkgorlist
+%type <pkgVal> package universe
 
 %destructor { delete $$; } STRING
 %destructor { delete $$; } PROPNAME
 %destructor { delete $$; } IDENT
+%destructor { delete $$; } vpkg
+%destructor { delete $$; } vpkglist
+%destructor { delete $$; } vpkglist2
+%destructor { delete $$; } vpkgorlist
+%destructor { delete $$; } package
+%destructor { delete $$; } universe
 %{
 
 #include "driver.h"
@@ -116,8 +134,6 @@ propinit : /* empy */
 propdef :
               PROPNAME  IDENT propinit
 	      {
-		//std::cout << "propdef " << *$1 << std::endl
-		//<< "type " << *$2 << std::endl;
 	      }
 
 propdefs : /* empty */
@@ -129,40 +145,71 @@ preamble : PREAMBLE EOL PROPERTYKW propdefs
 	   std::cerr << "recognized preamble" << std::endl;
 	 }
 
-relop : REQ
-      | RNEQ
-      | RGT
-      | RGE
-      | RLT
-      | RLE
-
-vpkg : IDENT
-     | IDENT relop INTEGER
-     {
-     //std::cerr << "versioned constraint: " << *$1 << " ** " << $3 << std::endl;
-     }
+relop :
+            REQ    {$$ = ROP_EQ;}
+	  | RNEQ {$$ = ROP_NEQ;}
+	  | RGT    {$$ = ROP_GT;}
+	  | RGE    {$$ = ROP_GE;}
+	  | RLT    {$$ = ROP_LT;}
+	  | RLE    {$$ = ROP_LE;}
+	  
+vpkg : 
+           IDENT {$$ = new Vpkg(*$1,ROP_NOP,0)}
+           | IDENT relop INTEGER
+	   {
+	     $$ = new Vpkg(*$1,$2,$3);
+	   }
 
 vpkglist : 
          vpkg
          {
-         //std::cout << "recog vpkglist" << std::endl;
+	   $$ = new vpkglist_t;
+	   $$->push_back(*$1);
          }
          | vpkglist ',' vpkg
+	 {
+	   $$ = new vpkglist_t;
+	   foreach(Vpkg v, *$1) {
+	     $$->push_back(v);
+	   }
+	   $$->push_back(*$3);
+	 }
 
 vpkglist2 : 
           vpkg
          {
-	   
+	   // $$ = new vpkglist_t;
+	   // $$->push_back(*$1);	   
 	 }
 	 | vpkglist2 '|' vpkg
+	 {
+	   // $$ = new vpkglist_t;
+	   // foreach(Vpkg& v, *$1) {
+	   //   $$->push_back(v);
+	   // }
+	   // $$->push_back(*$3);
+	 }
 
 vpkgorlist : 
           /* empty */
+         {
+	   //$$ = new list_vpkglist_t;
+	 }
          | vpkglist2
          {
-         //std::cout << "recog vpkglist2" << std::endl;
+	   //$$ = new list_vpkglist_t;
+	   //$$->push_back(*$1);
          }
          | vpkgorlist ',' vpkglist2
+	 {
+	   //$$ = new list_vpkglist_t;
+	   //foreach(vpkglist_t& v, *$1) {
+	   //  $$->push_back(v);
+	   // }
+	   //std::cout  << *$$ << std::endl; 
+	   //vpkglist_t& l = *$3;
+	   //$$->push_back(l);
+	 }
 
 propval :
          /* empty */
@@ -183,7 +230,7 @@ pkgprop :
           }
           | CONFLICTSKW vpkglist EOL
           {
-            //std::cout << "conflicts" << std::endl;
+            //std::cout << "conflicts " << *$2 << std::endl;
           }
           | PROVIDESKW vpkglist EOL
           {
@@ -212,16 +259,25 @@ package :
 	       VERSIONKW INTEGER EOL
 	       pkgprops
 	       {
+		 CudfPackage *pkg = new CudfPackage;
+		 pkg->name(*$2);
+		 pkg->version($5);
 		 //std::cout << "recognized package: " << *$2
 		 //<< " version: " << $5 << std::endl;
+		 $$ = pkg;
 	       }
 
 universe :
                package
 	       {
-	         //std::cerr << "recognized package" << std::endl;
+		 //std::cerr << "recognized package " << *$1 << std::endl;
+		 //driver.doc.
 	       }
                | universe EOL package 
+	       {
+		 //std::cerr << "recognized package " << *$1 << std::endl;
+		 //delete $1;
+	       }
 
 
 reqst :

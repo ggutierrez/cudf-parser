@@ -8,7 +8,7 @@
 #include <vector>
 
 // forward declaration
-class CalcContext;
+class CudfDoc;
 
 /** The example namespace is used to encapsulate the three parser classes
  * example::Parser, example::Scanner and example::Driver */
@@ -24,7 +24,7 @@ class Driver
 {
 public:
     /// construct a new parser driver context
-    Driver(class CalcContext& calc);
+    Driver(class CudfDoc& doc);
 
     /// enable debug output in the flex scanner
     bool trace_scanning;
@@ -76,7 +76,7 @@ public:
 
     /** Reference to the calculator context filled during parsing of the
      * expressions. */
-    class CalcContext& calc;
+    class CudfDoc& doc;
 };
 
 } // namespace example

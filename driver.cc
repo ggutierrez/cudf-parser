@@ -9,10 +9,10 @@
 
 namespace example {
 
-Driver::Driver(class CalcContext& _calc)
+Driver::Driver(class CudfDoc& _doc)
     : trace_scanning(false),
       trace_parsing(false),
-      calc(_calc)
+      doc(_doc)
 {
 }
 

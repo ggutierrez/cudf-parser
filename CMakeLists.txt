@@ -59,7 +59,7 @@ include_directories(${CudfParser_SOURCE_DIR})
 include_directories(${CudfParser_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
  add_executable(exprtest
-	exprtest.cc driver.cc 
+	exprtest.cc driver.cc cudf.cc cudfvpkg.cc
   driver.h scanner.h
       ${BISON_MyParser_OUTPUTS}
       ${FLEX_MyScanner_OUTPUTS}

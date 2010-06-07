@@ -3,13 +3,17 @@
 
 %{ /*** C/C++ Declarations ***/
 #include <boost/foreach.hpp>
+#include <boost/variant/variant.hpp>
+#include <boost/variant/get.hpp>
 #include <stdio.h>
 #include <string>
 #include <vector>
 
 #include "cudf.h"
-
+  
 #define  foreach BOOST_FOREACH
+  
+  typedef boost::variant<vpkglist_t,list_vpkglist_t> propVariant;
 %}
 
 /*** yacc/bison Declarations ***/
@@ -61,6 +65,7 @@
   class Vpkg*               vpkgVal;
   vpkglist_t*                 vpkglistVal;
   list_vpkglist_t*          listvpkglistVal;
+  propVariant*             propVal;
   class CudfPackage*   pkgVal;
   class CudfDoc*         docVal;
 }
@@ -102,6 +107,7 @@
 %type<vpkgVal> vpkg
 %type<vpkglistVal> vpkglist vpkglist2
 %type<listvpkglistVal> vpkgorlist
+%type<propVal> pkgprop
 %type <pkgVal> package universe
 
 %destructor { delete $$; } STRING
@@ -178,37 +184,35 @@ vpkglist :
 vpkglist2 : 
           vpkg
          {
-	   // $$ = new vpkglist_t;
-	   // $$->push_back(*$1);	   
+	   $$ = new vpkglist_t;
+	   $$->push_back(*$1);	   
 	 }
 	 | vpkglist2 '|' vpkg
 	 {
-	   // $$ = new vpkglist_t;
-	   // foreach(Vpkg& v, *$1) {
-	   //   $$->push_back(v);
-	   // }
-	   // $$->push_back(*$3);
+	   $$ = new vpkglist_t;
+	   foreach(Vpkg& v, *$1) {
+	     $$->push_back(v);
+	   }
+	   $$->push_back(*$3);
 	 }
 
 vpkgorlist : 
           /* empty */
          {
-	   //$$ = new list_vpkglist_t;
+	   $$ = new list_vpkglist_t; 
 	 }
          | vpkglist2
          {
-	   //$$ = new list_vpkglist_t;
-	   //$$->push_back(*$1);
+	   $$ = new list_vpkglist_t;
+	   $$->push_back(*$1);
          }
          | vpkgorlist ',' vpkglist2
 	 {
-	   //$$ = new list_vpkglist_t;
-	   //foreach(vpkglist_t& v, *$1) {
-	   //  $$->push_back(v);
-	   // }
-	   //std::cout  << *$$ << std::endl; 
-	   //vpkglist_t& l = *$3;
-	   //$$->push_back(l);
+	   $$ = new list_vpkglist_t;
+	   foreach(vpkglist_t& v, *$1) {
+	     $$->push_back(v);
+	   }
+	   $$->push_back(*$3);
 	 }
 
 propval :
@@ -226,18 +230,25 @@ keepprop :
 pkgprop :
           DEPENDSKW vpkgorlist EOL
           {
-            //std::cout << "dependencies" << std::endl;
+	    $$ = new propVariant;
+	    *$$ = *$2;
+	    //std::cout << "dependencies " <<  *$$ << std::endl;
           }
           | CONFLICTSKW vpkglist EOL
           {
-            //std::cout << "conflicts " << *$2 << std::endl;
+	    $$ = new propVariant;
+	    *$$ = *$2;
+            //std::cout << "conflicts " << *$$ << std::endl;
           }
           | PROVIDESKW vpkglist EOL
           {
-            //std::cout << "provides" << std::endl;
+	    $$ = new propVariant;
+	    *$$ = *$2;
+            //std::cout << "provides" << *$$ << std::endl;
           }
           | KEEPKW keepprop EOL
 	  {
+	    
 	  }
           |PROPNAME propval EOL
           {

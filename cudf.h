@@ -119,6 +119,8 @@ public:
   /// Returns the version
   unsigned int version(void) const;
   //@}
+	/// Sets the package as installed
+	void install(bool st);
 };
 /// Output \a pkg to \a os
 std::ostream& operator << (std::ostream& os, const CudfPackage& pkg);
@@ -149,41 +151,44 @@ private:
   packages_t universe;
   /// Storage for the request
   request_t request;
+  /// Indicates if the document has a request section or not
+  bool hasRequest_;
   /// Parse the cudf document contained in \a in.
   void parse(std::istream& in);
 public:
+  /// \name Parser interface
+  //@{
   /// Default constructor
   CudfDoc(void);
   /// Add a package to the universe
   void addPackage(const CudfPackage& pkg);
+  /// Add the constraints in \a i to the install part of the request
+  void addInstall(const vpkglist_t& i);
+  /// Add the constraints in \a i to the iupgrade part of the request
+  void addUpgrade(const vpkglist_t& u);
+  /// Add the constraints in \a i to the remove part of the request
+  void addRemove(const vpkglist_t& r);
+  //@}
   /// Number of packages in the document
   unsigned int packages(void) const;
-  /// Constructor from an input stream containing the cudf spec.
-  //CudfDoc(std::istream& in);
-  //CudfDoc(const char* fname);
   /// Tests whether the document contains a request
   bool hasRequest(void) const;
   /// Return the packages
-  const std::list<CudfPackage>&
-  getPackages(void) const {return universe;}
+  const std::list<CudfPackage>& getPackages(void) const;
   //TODO: this is needed by the updater but now that the parser is in c we should change this.
   std::list<CudfPackage>::iterator
   pkg_mbegin(void) { return universe.begin(); }
   std::list<CudfPackage>::iterator
   pkg_mend(void) { return universe.end(); }
   /// Return the install request
-  const vpkglist_t& reqToInstall(void) const  {
-    return request.get<0>();
-  } 
+  const vpkglist_t& reqToInstall(void) const;
   /// Return the upgrade request
-  const vpkglist_t& reqToUpgrade(void) const {
-    return request.get<1>();
-  } 
+  const vpkglist_t& reqToUpgrade(void) const;
   /// Return the remove request
-  const vpkglist_t& reqToRemove(void) const {
-    return request.get<2>();
-  }
+  const vpkglist_t& reqToRemove(void) const;
 };   
 /// Output a Cudf document \a doc on stream \a os
 std::ostream& operator << (std::ostream& os, const CudfDoc& doc);
+/// Function to parse a stream containing a cudf specification and create a document
+bool parse(std::istream& is, CudfDoc& doc);
 #endif

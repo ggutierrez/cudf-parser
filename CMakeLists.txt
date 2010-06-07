@@ -55,19 +55,35 @@ include_directories("${Boost_INCLUDE_DIRS}")
 find_package(FLEX)
 find_package(BISON)
 
-bison_target(MyParser parser.yy   ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp COMPILE_FLAGS "--defines=${CMAKE_CURRENT_BINARY_DIR}/parser.h")
-flex_target(MyScanner scanner.ll  ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
+bison_target(MyParser parser.yy 
+  ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp 
+  COMPILE_FLAGS "--defines=${CMAKE_CURRENT_BINARY_DIR}/parser.h")
+  
+flex_target(MyScanner scanner.ll  
+  ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
+  
 ADD_FLEX_BISON_DEPENDENCY(MyScanner MyParser)
 
-message(STATUS "scanner outputs: ${FLEX_MyScanner_OUTPUTS}")
-message(STATUS "parser outputs: ${BISON_MyParser_OUTPUTS}")
+#message(STATUS "scanner outputs: ${FLEX_MyScanner_OUTPUTS}")
+#message(STATUS "parser outputs: ${BISON_MyParser_OUTPUTS}")
       
 include_directories(${CudfParser_SOURCE_DIR})
 include_directories(${CudfParser_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
- add_executable(exprtest
-	exprtest.cc driver.cc cudf.cc cudfvpkg.cc
+
+add_library(cudfparser
+	driver.cc cudf.cc cudfvpkg.cc
   driver.h scanner.h
-      ${BISON_MyParser_OUTPUTS}
-      ${FLEX_MyScanner_OUTPUTS}
- )
+  ${BISON_MyParser_OUTPUTS}
+  ${FLEX_MyScanner_OUTPUTS})
+  
+add_executable(test test.cc)
+target_link_libraries(test cudfparser)	
+
+install(TARGETS cudfparser
+	ARCHIVE
+	DESTINATION lib)
+
+install(FILES cudf.h
+	DESTINATION include)
+

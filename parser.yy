@@ -118,7 +118,7 @@
 %type<listvpkglistVal> vpkgorlist
 %type<propVal> pkgprop
 %type<propsVal> pkgprops
-%type<propertyVal> propval;
+%type<propertyVal> propval
 %type <pkgVal> package universe
 
 %destructor { delete $$; } STRING
@@ -144,22 +144,25 @@
 
 %% /*** Grammar Rules ***/
 
-propinit : /* empy */
-          | REQ '[' INTEGER ']'
+propinit :
+  /* empy */
+  | REQ '[' INTEGER ']'
 
 propdef :
-              PROPNAME  IDENT propinit
-	      {
-	      }
+  PROPNAME IDENT propinit
+  {
+    (void)$2;
+    (void)$1;
+  }
 
 propdefs : /* empty */
-          | propdef
-          | propdefs ',' propdef
+  | propdef
+  | propdefs ',' propdef
 
 preamble : PREAMBLE EOL PROPERTYKW propdefs
-         {
-	   std::cerr << "recognized preamble" << std::endl;
-	 }
+  {
+    //std::cerr << "recognized preamble" << std::endl;
+  }
 
 relop :
     REQ    {$$ = ROP_EQ;}
@@ -226,7 +229,11 @@ vpkgorlist :
     }
 
 propval :
-    /* empty */
+    /* empty */ 
+    {
+      assert(false);
+      $$ = new propVariant;
+    }
     |INTEGER  { $$ = new propVariant($1); }
     | IDENT   { $$ = new propVariant(*$1); }
 		| BOOL    { $$ = new propVariant($1); }
@@ -310,19 +317,22 @@ package :
         pkg.pk_info.get<4>() = deps;
       }
       if (props->count("_keep") > 0) {
+        std::cerr << "**KEEP**" << std::endl;
         Keep k = boost::get<Keep>(props->at("_keep"));
         pkg.pk_info.get<0>() = k;          
+      } else {
+          pkg.pk_info.get<0>() = KP_NONE;          
       }
       if (props->count("_installed") > 0) {
         bool i = boost::get<bool>(props->at("_installed"));
         pkg.pk_info.get<1>() = i;
         //std::cout << "installed property found for package " << *$2 << std::endl;
+      } else {
+        pkg.pk_info.get<1>() = false;
       }
       
       // finally add the new created package
       driver.doc.addPackage(pkg);
-      //std::cout << "recognized package: " << *$2
-      //<< " version: " << $5 << std::endl;
     }
 
 universe :
@@ -331,8 +341,17 @@ universe :
 
 reqst :
     INSTALL vpkglist EOL
+    {
+      driver.doc.addInstall(*$2);
+    }
     | UPGRADE vpkglist EOL
+    {
+      driver.doc.addUpgrade(*$2);
+    }
     | REMOVE vpkglist EOL
+    {
+      driver.doc.addRemove(*$2);
+    }
   
 reqlist:
     reqst
@@ -344,7 +363,7 @@ request :
 start	:
     preamble EOL EOL universe EOL EOL request
     {
-      std::cout << "finished" << std::endl;
+
     }
 
 %% /*** Additional Code ***/

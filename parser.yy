@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "cudf.h"
   
@@ -16,6 +17,7 @@
   
   typedef boost::variant<vpkglist_t,list_vpkglist_t,Keep> propVariant;
   typedef boost::tuple<std::string,propVariant> propData;
+  typedef std::map<std::string,propVariant> pkgProps;
 %}
 
 /*** yacc/bison Declarations ***/
@@ -68,7 +70,8 @@
   class Vpkg*               vpkgVal;
   vpkglist_t*                 vpkglistVal;
   list_vpkglist_t*          listvpkglistVal;
-  propVariant*             propVal;
+  propData*                 propVal;
+  pkgProps*                 propsVal;
   class CudfPackage*   pkgVal;
   class CudfDoc*         docVal;
 }
@@ -112,6 +115,7 @@
 %type<vpkglistVal> vpkglist vpkglist2
 %type<listvpkglistVal> vpkgorlist
 %type<propVal> pkgprop
+%type<propsVal> pkgprops
 %type <pkgVal> package universe
 
 %destructor { delete $$; } STRING
@@ -121,6 +125,7 @@
 %destructor { delete $$; } vpkglist
 %destructor { delete $$; } vpkglist2
 %destructor { delete $$; } vpkgorlist
+%destructor { delete $$; } pkgprop
 %destructor { delete $$; } package
 %destructor { delete $$; } universe
 %{
@@ -234,26 +239,20 @@ keepprop :
 pkgprop :
           DEPENDSKW vpkgorlist EOL
           {
-	    $$ = new propVariant;
-	    *$$ = *$2;
-	    //std::cout << "dependencies " <<  *$$ << std::endl;
+	    $$ = new propData("_deps",*$2);
+	    //std::cout << "dependencies " <<  $$->get<1>()  << std::endl;
           }
           | CONFLICTSKW vpkglist EOL
           {
-	    $$ = new propVariant;
-	    *$$ = *$2;
-            //std::cout << "conflicts " << *$$ << std::endl;
+	    $$ = new propData("_confs",*$2);
           }
           | PROVIDESKW vpkglist EOL
           {
-	    $$ = new propVariant;
-	    *$$ = *$2;
-            //std::cout << "provides" << *$$ << std::endl;
+	    $$ = new propData("_pvds",*$2);
           }
           | KEEPKW keepprop EOL
 	  {
-	    $$ = new propVariant;
-	    *$$ = $2;
+	    $$ = new propData("_keep",$2);
 	  }
           |PROPNAME propval EOL
           {
@@ -264,10 +263,13 @@ pkgprops :
                  /*empty */
                 | pkgprop
                  {
-		   //std::cerr << "package property" << std::endl;
+		   $$ = new pkgProps;
+		   $$->insert(*$1);
 		 }
                | pkgprops pkgprop
 	       {
+		 $$ = new pkgProps(*$1);
+		 $$->insert(*$2);
 	       }
 
 package : 

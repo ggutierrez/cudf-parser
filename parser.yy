@@ -5,6 +5,7 @@
 #include <boost/foreach.hpp>
 #include <boost/variant/variant.hpp>
 #include <boost/variant/get.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -13,7 +14,8 @@
   
 #define  foreach BOOST_FOREACH
   
-  typedef boost::variant<vpkglist_t,list_vpkglist_t> propVariant;
+  typedef boost::variant<vpkglist_t,list_vpkglist_t,Keep> propVariant;
+  typedef boost::tuple<std::string,propVariant> propData;
 %}
 
 /*** yacc/bison Declarations ***/
@@ -62,6 +64,7 @@
   int  			     integerVal;
   std::string*		     stringVal;
   RelOp                        relopVal;
+  Keep                          keepVal;
   class Vpkg*               vpkgVal;
   vpkglist_t*                 vpkglistVal;
   list_vpkglist_t*          listvpkglistVal;
@@ -104,6 +107,7 @@
 %token <stringVal>        IDENT            "identifier"
 
 %type <relopVal> relop
+%type<keepVal> keepprop
 %type<vpkgVal> vpkg
 %type<vpkglistVal> vpkglist vpkglist2
 %type<listvpkglistVal> vpkgorlist
@@ -222,10 +226,10 @@ propval :
          | IDENT
               
 keepprop :
-                 KEEPNONE
-		 | KEEPVERSION
-		 | KEEPPACKAGE
-		 | KEEPFEATURE
+                 KEEPNONE { $$ = KP_NONE; }
+		 | KEEPVERSION { $$ = KP_VERSION; }
+		 | KEEPPACKAGE { $$ = KP_PACKAGE; }
+		 | KEEPFEATURE { $$ = KP_FEATURE; }
 
 pkgprop :
           DEPENDSKW vpkgorlist EOL
@@ -248,7 +252,8 @@ pkgprop :
           }
           | KEEPKW keepprop EOL
 	  {
-	    
+	    $$ = new propVariant;
+	    *$$ = $2;
 	  }
           |PROPNAME propval EOL
           {

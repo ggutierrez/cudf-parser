@@ -15,7 +15,7 @@
   
 #define  foreach BOOST_FOREACH
   
-  typedef boost::variant<vpkglist_t,list_vpkglist_t,Keep> propVariant;
+  typedef boost::variant<vpkglist_t,list_vpkglist_t,Keep,std::string,int,bool> propVariant;
   typedef boost::tuple<std::string,propVariant> propData;
   typedef std::map<std::string,propVariant> pkgProps;
 %}
@@ -63,51 +63,53 @@
  /*** BEGIN EXAMPLE - Change the example grammar's tokens below ***/
 
 %union {
+  bool               boolVal;
   int  			     integerVal;
-  std::string*		     stringVal;
-  RelOp                        relopVal;
-  Keep                          keepVal;
-  class Vpkg*               vpkgVal;
-  vpkglist_t*                 vpkglistVal;
-  list_vpkglist_t*          listvpkglistVal;
-  propData*                 propVal;
-  pkgProps*                 propsVal;
-  class CudfPackage*   pkgVal;
-  class CudfDoc*         docVal;
+  std::string*		 stringVal;
+  RelOp              relopVal;
+  Keep               keepVal;
+  class Vpkg*        vpkgVal;
+  vpkglist_t*        vpkglistVal;
+  list_vpkglist_t*   listvpkglistVal;
+  propData*          propVal;
+  pkgProps*          propsVal;
+  propVariant*	     propertyVal;
 }
 
 %token			END					0		"end of file"
 %token			EOL							"end of line"
 
-%token			PREAMBLE            "'preamble:'"
-%token			PROPERTYKW      "'property:'"
+%token			PREAMBLE                    "'preamble:'"
+%token			PROPERTYKW                  "'property:'"
 
-%token			PACKAGEKW        "'package:'"
-%token			VERSIONKW          "'version:'"
-%token			DEPENDSKW         "'depends:'"
-%token			CONFLICTSKW     "'conflicts:'"
-%token			PROVIDESKW       "'provides:'"
-%token                    KEEPKW                 "'keep:'"
-%token                    KEEPPACKAGE    "'package'"
-%token                    KEEPVERSION     "'version'"
-%token                    KEEPFEATURE    "'feature'"
-%token                    KEEPNONE           "'none'"
-%token			REQUEST               "'request:'"
-%token			UPGRADE              "'upgrade:'"
-%token			INSTALL                "'install:'"
-%token			REMOVE                "'remove:'"
+%token			PACKAGEKW                   "'package:'"
+%token			VERSIONKW                   "'version:'"
+%token			DEPENDSKW                   "'depends:'"
+%token			CONFLICTSKW                 "'conflicts:'"
+%token			PROVIDESKW                  "'provides:'"
+%token			INSTALLEDKW                 "'installed:'"
+%token      KEEPKW                      "'keep:'"
+%token      KEEPPACKAGE                 "'package'"
+%token      KEEPVERSION                 "'version'"
+%token      KEEPFEATURE                 "'feature'"
+%token      KEEPNONE                    "'none'"
+%token			REQUEST                     "'request:'"
+%token			UPGRADE                     "'upgrade:'"
+%token			INSTALL                     "'install:'"
+%token			REMOVE                      "'remove:'"
 
 %token			REQ		"="
-%token			RNEQ		"!="
+%token			RNEQ  "!="
 %token			RGT		">"
 %token			RGE		">="
 %token			RLT		"<"
 %token			RLE		"<="
 
-%token <integerVal> 	INTEGER      "integer"
-%token <stringVal> 	STRING	        "string"
-%token <stringVal>        PROPNAME  "property name"
-%token <stringVal>        IDENT            "identifier"
+%token <boolVal>        BOOL         "boolean ('true' or 'false')"
+%token <integerVal>     INTEGER      "integer"
+%token <stringVal> 	    STRING	     "string"
+%token <stringVal>      PROPNAME     "property name"
+%token <stringVal>      IDENT        "identifier"
 
 %type <relopVal> relop
 %type<keepVal> keepprop
@@ -116,6 +118,7 @@
 %type<listvpkglistVal> vpkgorlist
 %type<propVal> pkgprop
 %type<propsVal> pkgprops
+%type<propertyVal> propval;
 %type <pkgVal> package universe
 
 %destructor { delete $$; } STRING
@@ -126,8 +129,6 @@
 %destructor { delete $$; } vpkglist2
 %destructor { delete $$; } vpkgorlist
 %destructor { delete $$; } pkgprop
-%destructor { delete $$; } package
-%destructor { delete $$; } universe
 %{
 
 #include "driver.h"
@@ -142,7 +143,7 @@
 %}
 
 %% /*** Grammar Rules ***/
- 
+
 propinit : /* empy */
           | REQ '[' INTEGER ']'
 
@@ -161,7 +162,7 @@ preamble : PREAMBLE EOL PROPERTYKW propdefs
 	 }
 
 relop :
-            REQ    {$$ = ROP_EQ;}
+    REQ    {$$ = ROP_EQ;}
 	  | RNEQ {$$ = ROP_NEQ;}
 	  | RGT    {$$ = ROP_GT;}
 	  | RGE    {$$ = ROP_GE;}
@@ -169,157 +170,187 @@ relop :
 	  | RLE    {$$ = ROP_LE;}
 	  
 vpkg : 
-           IDENT {$$ = new Vpkg(*$1,ROP_NOP,0)}
-           | IDENT relop INTEGER
-	   {
-	     $$ = new Vpkg(*$1,$2,$3);
-	   }
+    IDENT {$$ = new Vpkg(*$1,ROP_NOP,0)}
+    |IDENT relop INTEGER
+    { 
+      $$ = new Vpkg(*$1,$2,$3);
+    }
 
 vpkglist : 
-         vpkg
-         {
-	   $$ = new vpkglist_t;
-	   $$->push_back(*$1);
-         }
-         | vpkglist ',' vpkg
-	 {
-	   $$ = new vpkglist_t;
-	   foreach(Vpkg v, *$1) {
-	     $$->push_back(v);
-	   }
-	   $$->push_back(*$3);
-	 }
+    vpkg
+    {
+      $$ = new vpkglist_t;
+      $$->push_back(*$1);
+    }
+    | vpkglist ',' vpkg
+    {
+      $$ = new vpkglist_t;
+      foreach(Vpkg v, *$1) {
+        $$->push_back(v);
+      }
+      $$->push_back(*$3);
+    }
 
 vpkglist2 : 
-          vpkg
-         {
-	   $$ = new vpkglist_t;
-	   $$->push_back(*$1);	   
-	 }
-	 | vpkglist2 '|' vpkg
-	 {
-	   $$ = new vpkglist_t;
-	   foreach(Vpkg& v, *$1) {
-	     $$->push_back(v);
-	   }
-	   $$->push_back(*$3);
-	 }
+    vpkg
+    {
+      $$ = new vpkglist_t;
+      $$->push_back(*$1);	   
+    }
+    | vpkglist2 '|' vpkg
+    {
+      $$ = new vpkglist_t;
+      foreach(Vpkg& v, *$1) {
+        $$->push_back(v);
+      }
+      $$->push_back(*$3);
+    }
 
 vpkgorlist : 
-          /* empty */
-         {
-	   $$ = new list_vpkglist_t; 
-	 }
-         | vpkglist2
-         {
-	   $$ = new list_vpkglist_t;
-	   $$->push_back(*$1);
-         }
-         | vpkgorlist ',' vpkglist2
-	 {
-	   $$ = new list_vpkglist_t;
-	   foreach(vpkglist_t& v, *$1) {
-	     $$->push_back(v);
-	   }
-	   $$->push_back(*$3);
-	 }
+    /* empty */
+    {
+      $$ = new list_vpkglist_t; 
+    }
+    | vpkglist2
+    {
+      $$ = new list_vpkglist_t;
+      $$->push_back(*$1);
+    }
+    | vpkgorlist ',' vpkglist2
+    {
+      $$ = new list_vpkglist_t;
+      foreach(vpkglist_t& v, *$1) {
+        $$->push_back(v);
+      }
+      $$->push_back(*$3);
+    }
 
 propval :
-         /* empty */
-         | STRING
-         | INTEGER
-         | IDENT
+    /* empty */
+    |INTEGER  { $$ = new propVariant($1); }
+    | IDENT   { $$ = new propVariant(*$1); }
+		| BOOL    { $$ = new propVariant($1); }
               
 keepprop :
-                 KEEPNONE { $$ = KP_NONE; }
-		 | KEEPVERSION { $$ = KP_VERSION; }
-		 | KEEPPACKAGE { $$ = KP_PACKAGE; }
-		 | KEEPFEATURE { $$ = KP_FEATURE; }
+    KEEPNONE      { $$ = KP_NONE; }
+		| KEEPVERSION { $$ = KP_VERSION; }
+    | KEEPPACKAGE { $$ = KP_PACKAGE; }
+		| KEEPFEATURE { $$ = KP_FEATURE; }
 
 pkgprop :
-          DEPENDSKW vpkgorlist EOL
-          {
-	    $$ = new propData("_deps",*$2);
-	    //std::cout << "dependencies " <<  $$->get<1>()  << std::endl;
-          }
-          | CONFLICTSKW vpkglist EOL
-          {
-	    $$ = new propData("_confs",*$2);
-          }
-          | PROVIDESKW vpkglist EOL
-          {
-	    $$ = new propData("_pvds",*$2);
-          }
-          | KEEPKW keepprop EOL
-	  {
-	    $$ = new propData("_keep",$2);
-	  }
-          |PROPNAME propval EOL
-          {
-          //std::cerr << "**property** '" << *$1 << "'" << std::endl;
-          }
+    DEPENDSKW vpkgorlist EOL
+    {
+      $$ = new propData("_deps",*$2);
+    }
+    | CONFLICTSKW vpkglist EOL
+    {
+      $$ = new propData("_confs",*$2);
+    }
+    | PROVIDESKW vpkglist EOL
+    {
+      $$ = new propData("_pvds",*$2);
+    }
+    | KEEPKW keepprop EOL
+    {
+			$$ = new propData("_keep",$2);
+    }
+    | INSTALLEDKW BOOL EOL
+    {
+      $$ = new propData("_installed",$2);
+    }
+    |PROPNAME propval EOL
+    {
+			$$ = new propData(*$1,*$2);
+    }
         
 pkgprops :
-                 /*empty */
-                | pkgprop
-                 {
-		   $$ = new pkgProps;
-		   $$->insert(*$1);
-		 }
-               | pkgprops pkgprop
-	       {
-		 $$ = new pkgProps(*$1);
-		 $$->insert(*$2);
-	       }
+    /*empty */
+    {
+      $$ = new pkgProps;
+    }
+    | pkgprop
+    {
+      $$ = new pkgProps;
+      $$->insert(std::make_pair($1->get<0>(),$1->get<1>()));
+      assert($$->size() == 1);
+    }
+    | pkgprops pkgprop
+    {
+      $$ = new pkgProps(*$1);
+      $$->insert(std::make_pair($2->get<0>(),$2->get<1>()));
+      assert($$->size() == $1->size() + 1);
+    }
 
 package : 
-               PACKAGEKW IDENT EOL
-	       VERSIONKW INTEGER EOL
-	       pkgprops
-	       {
-		 CudfPackage *pkg = new CudfPackage;
-		 pkg->name(*$2);
-		 pkg->version($5);
-		 //std::cout << "recognized package: " << *$2
-		 //<< " version: " << $5 << std::endl;
-		 $$ = pkg;
-	       }
+    PACKAGEKW IDENT EOL VERSIONKW INTEGER EOL pkgprops
+    {
+      /* This rule does not return, it just access the document an register
+          the new package in the list. */
+				
+      CudfPackage pkg;
+      pkg.pk_info.get<5>() = *$2;
+      pkg.pk_info.get<6>() = $5;
+      
+      //std::cout << "size: " << $7->size() << std::endl;
+      pkgProps *props = $7;
+      //typedef std::pair<std::string,propVariant> data_t;
+      //foreach (const data_t& d, *$7) {
+      //	std::cout << d.first << std::endl;
+      //}
+      if (props->count("_pvds") > 0) {
+        vpkglist_t& pvds = boost::get<vpkglist_t>(props->at("_pvds"));
+        pkg.pk_info.get<3>() = pvds;
+      }
+      if (props->count("_confs") > 0) {
+        vpkglist_t& cnfs = boost::get<vpkglist_t>(props->at("_confs"));
+        pkg.pk_info.get<2>() = cnfs;
+      }
+      if (props->count("_deps") > 0) {
+        list_vpkglist_t& deps = boost::get<list_vpkglist_t>(props->at("_deps"));
+        pkg.pk_info.get<4>() = deps;
+      }
+      if (props->count("_keep") > 0) {
+        Keep k = boost::get<Keep>(props->at("_keep"));
+        pkg.pk_info.get<0>() = k;          
+      }
+      if (props->count("_installed") > 0) {
+        bool i = boost::get<bool>(props->at("_installed"));
+        pkg.pk_info.get<1>() = i;
+        //std::cout << "installed property found for package " << *$2 << std::endl;
+      }
+      
+      // finally add the new created package
+      driver.doc.addPackage(pkg);
+      //std::cout << "recognized package: " << *$2
+      //<< " version: " << $5 << std::endl;
+    }
 
 universe :
-               package
-	       {
-		 //std::cerr << "recognized package " << *$1 << std::endl;
-		 //driver.doc.
-	       }
-               | universe EOL package 
-	       {
-		 //std::cerr << "recognized package " << *$1 << std::endl;
-		 //delete $1;
-	       }
-
+    package
+    | universe EOL package 
 
 reqst :
-         INSTALL vpkglist EOL
-         | UPGRADE vpkglist EOL
-         | REMOVE vpkglist EOL
-	 
+    INSTALL vpkglist EOL
+    | UPGRADE vpkglist EOL
+    | REMOVE vpkglist EOL
+  
 reqlist:
-        reqst
-        | reqlist reqst
+    reqst
+    | reqlist reqst
 
 request :
-             REQUEST EOL reqlist
+    REQUEST EOL reqlist
 
 start	:
-        preamble EOL EOL universe EOL EOL request
-        {
-          std::cout << "finished" << std::endl;
-	}
+    preamble EOL EOL universe EOL EOL request
+    {
+      std::cout << "finished" << std::endl;
+    }
 
 %% /*** Additional Code ***/
 
 void example::Parser::error(const Parser::location_type& l,
 			    const std::string& m)
-{
+{	
   driver.error(l, m);
 }

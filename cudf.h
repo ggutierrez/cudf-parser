@@ -5,6 +5,13 @@
 #include <list>
 #include <string>
 #include <vector>
+
+namespace example {
+  /* Forward declaration of the driver class because some of the data structures
+   here are filled by the parser and friend membership is defined*/
+  class Driver;
+}
+
 /**
  * \brief Relational operators definition
  */
@@ -92,28 +99,13 @@ public:
                std::string,unsigned int>
   pkg_info_t;
   pkg_info_t pk_info;
-public:
   /// Default constructor
   CudfPackage(void);
-  /// \name Parser interface
-  //@{
-  /// Returns the keep property
-  Keep& keep(void);
-  /// Returns the install property
-  bool& installed(void);
-  /// Returns the provides
-  vpkglist_t& provides(void);
-  /// Returns the conflicts
-  vpkglist_t& conflicts(void);
-  /// Returns the dependencies
-  list_vpkglist_t& depends(void);
-  void name(const std::string& nm);
-  void version(unsigned int v);
-  //@}
+public:
   /// \name Read only interface
   //@{
   /// Returns the keep property
-  const Keep& keep(void) const;
+  Keep keep(void) const;
   /// Returns the install property
   bool installed(void) const;
   /// Returns the provides
@@ -122,18 +114,14 @@ public:
   const vpkglist_t& conflicts(void) const;
   /// Returns the dependencies
   const list_vpkglist_t& depends(void) const;
+  /// Returns the name of the package
   const std::string& name(void) const;
+  /// Returns the version
   unsigned int version(void) const;
-  void install(bool st);
   //@}
 };
 /// Output \a pkg to \a os
 std::ostream& operator << (std::ostream& os, const CudfPackage& pkg);
-
-namespace example {
-  class Driver;
-}
-
 /**
  * \brief Cudf document representation
  *
@@ -164,7 +152,12 @@ private:
   /// Parse the cudf document contained in \a in.
   void parse(std::istream& in);
 public:
+  /// Default constructor
   CudfDoc(void);
+  /// Add a package to the universe
+  void addPackage(const CudfPackage& pkg);
+  /// Number of packages in the document
+  unsigned int packages(void) const;
   /// Constructor from an input stream containing the cudf spec.
   //CudfDoc(std::istream& in);
   //CudfDoc(const char* fname);

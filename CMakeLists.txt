@@ -45,6 +45,13 @@ cmake_minimum_required (VERSION 2.6)
 project (CudfParser)
 set(DS_VERSION "0.1")
 
+set(REQ_BOOST_LIBS)
+set(Boost_USE_STATIC_LIBS  ON)
+find_package(Boost 1.36 REQUIRED COMPONENTS ${REQ_BOOST_LIBS})
+message(STATUS "Boost path: ${Boost_INCLUDE_DIRS}")
+include_directories("${Boost_INCLUDE_DIRS}")
+
+
 find_package(FLEX)
 find_package(BISON)
 

@@ -61,6 +61,17 @@ typedef example::Parser::token_type token_type;
 %}
 
  /*** BEGIN EXAMPLE - Change the example lexer rules below ***/
+
+true {
+  yylval->boolVal = true;
+  return token::BOOL;
+}
+
+false {
+  yylval->boolVal = false;
+  return token::BOOL;
+}
+
 preamble: {
   return token::PREAMBLE; 
 }
@@ -87,6 +98,10 @@ conflicts: {
 
 provides: {
   return token::PROVIDESKW;
+}
+
+installed: {
+  return token::INSTALLEDKW;
 }
 
 keep: {

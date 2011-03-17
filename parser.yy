@@ -1,7 +1,7 @@
 /* $Id: parser.yy 48 2009-09-05 08:07:10Z tb $ -*- mode: c++ -*- */
 /** \file parser.yy Contains the example Bison parser source */
 
-%{ /*** C/C++ Declarations ***/
+%code requires { /*** C/C++ Declarations ***/
 #include <boost/foreach.hpp>
 #include <boost/variant/variant.hpp>
 #include <boost/variant/get.hpp>
@@ -15,10 +15,13 @@
   
 #define  foreach BOOST_FOREACH
   
+  using std::string;
+  using std::map;
+
   typedef boost::variant<vpkglist_t,list_vpkglist_t,Keep,std::string,int,bool> propVariant;
-  typedef boost::tuple<std::string,propVariant> propData;
-  typedef std::map<std::string,propVariant> pkgProps;
-%}
+  typedef boost::tuple<string,propVariant> propData;
+  typedef map<string,propVariant> pkgProps;
+}
 
 /*** yacc/bison Declarations ***/
 
@@ -173,7 +176,7 @@ relop :
 	  | RLE    {$$ = ROP_LE;}
 	  
 vpkg : 
-    IDENT {$$ = new Vpkg(*$1,ROP_NOP,0)}
+IDENT {$$ = new Vpkg(*$1,ROP_NOP,0);}
     |IDENT relop INTEGER
     { 
       $$ = new Vpkg(*$1,$2,$3);
@@ -368,8 +371,7 @@ start	:
 
 %% /*** Additional Code ***/
 
-void example::Parser::error(const Parser::location_type& l,
-			    const std::string& m)
+void example::Parser::error(const Parser::location_type& l, const string& m)
 {	
   driver.error(l, m);
 }

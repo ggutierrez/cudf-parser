@@ -2,7 +2,6 @@
 #define __CUDF_H_
 
 #include <boost/tuple/tuple.hpp>
-#include <list>
 #include <string>
 #include <vector>
 
@@ -71,11 +70,11 @@ public:
 /// Output of constraint information.
 std::ostream& operator<< (std::ostream& os, const Vpkg& c);
 /// List of package constraints
-typedef std::list<Vpkg> vpkglist_t;
+typedef std::vector<Vpkg> vpkglist_t;
 /// Output of list of package constraints
 std::ostream& operator<< (std::ostream& os, const vpkglist_t& l);
 /// List of lists of package constraints
-typedef std::list<vpkglist_t> list_vpkglist_t;
+typedef std::vector<vpkglist_t> list_vpkglist_t;
 /// Output of list of lists of package constraints
 std::ostream& operator<< (std::ostream& os, const list_vpkglist_t& ll);
 /**
@@ -145,7 +144,7 @@ public:
     request_t;
   /// Datastructure for the universe of packages
   typedef
-    std::list<CudfPackage> packages_t;
+    std::vector<CudfPackage> packages_t;
 private:
   /// Storage for the universe
   packages_t universe;
@@ -174,11 +173,11 @@ public:
   /// Tests whether the document contains a request
   bool hasRequest(void) const;
   /// Return the packages
-  const std::list<CudfPackage>& getPackages(void) const;
+  const std::vector<CudfPackage>& getPackages(void) const;
   //TODO: this is needed by the updater but now that the parser is in c we should change this.
-  std::list<CudfPackage>::iterator
+  std::vector<CudfPackage>::iterator
   pkg_mbegin(void) { return universe.begin(); }
-  std::list<CudfPackage>::iterator
+  std::vector<CudfPackage>::iterator
   pkg_mend(void) { return universe.end(); }
   /// Return the install request
   const vpkglist_t& reqToInstall(void) const;

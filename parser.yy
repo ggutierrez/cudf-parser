@@ -1,7 +1,8 @@
 /* $Id: parser.yy 48 2009-09-05 08:07:10Z tb $ -*- mode: c++ -*- */
 /** \file parser.yy Contains the example Bison parser source */
 
-%code requires { /*** C/C++ Declarations ***/
+//%code requires { /*** C/C++ Declarations ***/
+%{
 #include <boost/foreach.hpp>
 #include <boost/variant/variant.hpp>
 #include <boost/variant/get.hpp>
@@ -10,18 +11,19 @@
 #include <string>
 #include <vector>
 #include <map>
-
+  
 #include "cudf.h"
   
 #define  foreach BOOST_FOREACH
   
   using std::string;
   using std::map;
-
+  
   typedef boost::variant<vpkglist_t,list_vpkglist_t,Keep,std::string,int,bool> propVariant;
   typedef boost::tuple<string,propVariant> propData;
   typedef map<string,propVariant> pkgProps;
-}
+  //}
+  %}
 
 /*** yacc/bison Declarations ***/
 
@@ -30,7 +32,7 @@
 
 /* add debug output code to generated parser. disable this for release
  * versions. */
-%debug
+ //%debug
 
 /* start symbol is named "start" */
 %start start

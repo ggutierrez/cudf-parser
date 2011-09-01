@@ -41,7 +41,7 @@ void CudfDoc::addRemove(const vpkglist_t& r) {
   hasRequest_ = true;
 }
 
-const std::list<CudfPackage>& CudfDoc::getPackages(void) const {
+const std::vector<CudfPackage>& CudfDoc::getPackages(void) const {
   return universe;
 }
 
